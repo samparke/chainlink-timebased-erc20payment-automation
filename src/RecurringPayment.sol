@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {PayToken} from "./PayToken.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+contract RecurringPayment is Ownable {
+    // errors
+    error PayToken__UserAlreadyBeingPaid(address user);
+
+    // events
+    event UserPaid(address user, uint256 amount);
+    event UserAddedToPaymentList(address user);
+
+    PayToken public immutable i_payToken;
+    mapping(address user => uint256 balance) private s_userTokenBalance;
+    address[] private usersToPay;
+
+    constructor(PayToken _payToken) Ownable(msg.sender) {
+        i_payToken = _payToken;
+    }
+
+    function addUserToPaymentList(address _user) external {
+        for (uint256 i = 0; i < usersToPay.length; i++) {
+            if (_user == usersToPay[i]) {
+                revert PayToken__UserAlreadyBeingPaid(_user);
+            }
+        }
+        usersToPay.push(_user);
+        emit UserAddedToPaymentList(_user);
+    }
+
+    // getter functions
+
+    function getUserTokenBalance(address _user) external view returns (uint256) {
+        return s_userTokenBalance[_user];
+    }
+
+    function getToken() external view returns (PayToken) {
+        return i_payToken;
+    }
+}
