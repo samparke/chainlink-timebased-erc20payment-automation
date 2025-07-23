@@ -22,7 +22,7 @@ contract Payment is Ownable {
         i_payToken = _payToken;
     }
 
-    function addUserToPaymentList(address _user) external {
+    function addUserToPaymentList(address _user) external onlyOwner {
         for (uint256 i = 0; i < usersToPay.length; i++) {
             if (_user == usersToPay[i]) {
                 revert PayToken__UserAlreadyBeingPaid(_user);
@@ -38,6 +38,7 @@ contract Payment is Ownable {
             if (!success) {
                 revert PayToken__FailedPayment();
             }
+            emit UserPaid(usersToPay[i], s_amountToPayUsers[usersToPay[i]]);
         }
     }
 
@@ -49,5 +50,14 @@ contract Payment is Ownable {
 
     function getToken() external view returns (PayToken) {
         return i_payToken;
+    }
+
+    function getIsUserInPaymentList(address _user) external view returns (bool) {
+        for (uint256 i = 0; i < usersToPay.length; i++) {
+            if (_user == usersToPay[i]) {
+                return true;
+            }
+        }
+        return false;
     }
 }
