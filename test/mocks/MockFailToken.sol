@@ -6,7 +6,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract PayToken is ERC20, ERC20Burnable, Ownable, AccessControl {
+contract MockFailToken is ERC20, ERC20Burnable, Ownable, AccessControl {
     error PayToken__BalanceMustBeMoreThanBurnAmount();
     error PayToken__MustBeMoreThanZero();
 
@@ -34,7 +34,7 @@ contract PayToken is ERC20, ERC20Burnable, Ownable, AccessControl {
         returns (bool)
     {
         _mint(_user, _amount);
-        return true;
+        return false;
     }
 
     function burn(uint256 _amount) public override onlyOwner moreThanZero(_amount) onlyRole(MINT_AND_BURN_ROLE) {
