@@ -18,7 +18,7 @@ contract PayToken is ERC20, ERC20Burnable, Ownable {
 
     constructor() ERC20("PayToken", "PAY") Ownable(msg.sender) {}
 
-    function mint(address _user, uint256 _amount) external onlyOwner moreThanZero(_amount) returns (bool) {
+    function mint(address _user, uint256 _amount) public onlyOwner moreThanZero(_amount) returns (bool) {
         _mint(_user, _amount);
         return true;
     }

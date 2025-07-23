@@ -4,9 +4,10 @@ pragma solidity ^0.8.24;
 import {PayToken} from "./PayToken.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RecurringPayment is Ownable {
+contract Payment is Ownable {
     // errors
     error PayToken__UserAlreadyBeingPaid(address user);
+    error PayToken__FailedPayment();
 
     // events
     event UserPaid(address user, uint256 amount);
@@ -14,6 +15,7 @@ contract RecurringPayment is Ownable {
 
     PayToken public immutable i_payToken;
     mapping(address user => uint256 balance) private s_userTokenBalance;
+    mapping(address user => uint256 amount) private s_amountToPayUsers;
     address[] private usersToPay;
 
     constructor(PayToken _payToken) Ownable(msg.sender) {
@@ -28,6 +30,15 @@ contract RecurringPayment is Ownable {
         }
         usersToPay.push(_user);
         emit UserAddedToPaymentList(_user);
+    }
+
+    function payUsers() external {
+        for (uint256 i = 0; i < usersToPay.length; i++) {
+            bool success = i_payToken.mint(usersToPay[i], s_amountToPayUsers[usersToPay[i]]);
+            if (!success) {
+                revert PayToken__FailedPayment();
+            }
+        }
     }
 
     // getter functions
