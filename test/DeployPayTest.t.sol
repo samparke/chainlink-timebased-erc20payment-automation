@@ -16,14 +16,22 @@ contract DeployPayTest is Test {
     address user3 = makeAddr("user3");
     address owner = makeAddr("owner");
     address anvil = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    address sepolia = vm.addr(vm.envUint("PRIVATE_KEY"));
+    address deployerAddress;
 
     function setUp() public {
+        if (bytes(vm.envString("SEPOLIA_RPC_URL")).length > 0) {
+            vm.createSelectFork(vm.envString("SEPOLIA_RPC_URL"));
+            deployerAddress = sepolia;
+        } else {
+            deployerAddress = anvil;
+        }
         deployer = new DeployPay();
         (payToken, paymentContract) = deployer.run();
     }
 
     function testAdduserToPaymentList() public {
-        vm.prank(anvil);
+        vm.prank(deployerAddress);
         paymentContract.addUserToPaymentList(user1, 1 ether);
         assertTrue(paymentContract.getIsUserInPaymentList(user1));
         assertFalse(paymentContract.getIsUserInPaymentList(user2));
@@ -34,7 +42,7 @@ contract DeployPayTest is Test {
     }
 
     function testAddUsersToListAndPayUsersAndGetBalanceToSeeAnIncrease() public {
-        vm.startPrank(anvil);
+        vm.startPrank(deployerAddress);
         paymentContract.addUserToPaymentList(user1, 1 ether);
         paymentContract.addUserToPaymentList(user2, 2 ether);
         paymentContract.addUserToPaymentList(user3, 3 ether);
@@ -56,10 +64,10 @@ contract DeployPayTest is Test {
     }
 
     function testAttemptToAddUserToPaymentListWhoIsAlreadyThere() public {
-        vm.prank(anvil);
+        vm.prank(deployerAddress);
         paymentContract.addUserToPaymentList(user1, 1 ether);
         vm.expectPartialRevert(Payment.Payment__UserAlreadyBeingPaid.selector);
-        vm.prank(anvil);
+        vm.prank(deployerAddress);
         paymentContract.addUserToPaymentList(user1, 1 ether);
     }
 
