@@ -23,6 +23,10 @@ contract PayToken is ERC20, ERC20Burnable, Ownable, AccessControl {
         grantMintAndBurnRole(msg.sender);
     }
 
+    /**
+     * @notice grants mint and burn tokens access
+     * @param _account the account we are granting minting and burning role
+     */
     function grantMintAndBurnRole(address _account) public onlyOwner {
         _grantRole(MINT_AND_BURN_ROLE, _account);
     }

@@ -26,10 +26,20 @@ contract Payment is Ownable, ReentrancyGuard, AccessControl {
         grantPaymentRole(msg.sender);
     }
 
+    /**
+     * @notice this function is to grant accounts to call the payUsers function, which mints tokens on the PayToken contract.
+     * Specifically, this will be used to grant Chainlink Upkeep to call the functions in an automated fashion
+     * @param _account the account we are granting access to for calling payUsers functions
+     */
     function grantPaymentRole(address _account) public onlyOwner {
         _grantRole(PAY_USER_ROLE, _account);
     }
 
+    /**
+     * @notice adds users to payment list, which when payUsers gets called, mints tokens to these addresses
+     * @param _user the user we are adding to the payment list
+     * @param _amountToPay the amount we are going to pay users (which will be translated in erc20 tokens)
+     */
     function addUserToPaymentList(address _user, uint256 _amountToPay) external onlyOwner {
         for (uint256 i = 0; i < usersToPay.length; i++) {
             if (_user == usersToPay[i]) {
@@ -41,9 +51,19 @@ contract Payment is Ownable, ReentrancyGuard, AccessControl {
         emit UserAddedToPaymentList(_user);
     }
 
+    /**
+     * @notice pays users by minting tokens from the pay token contract
+     */
     function payUsers() external nonReentrant onlyRole(PAY_USER_ROLE) {
         for (uint256 i = 0; i < usersToPay.length; i++) {
-            bool success = i_payToken.mint(usersToPay[i], s_amountToPayUsers[usersToPay[i]]);
+            address user = usersToPay[i];
+            uint256 amount = s_amountToPayUsers[usersToPay[i]];
+
+            if (amount == 0) {
+                continue;
+            }
+
+            bool success = i_payToken.mint(user, amount);
             if (!success) {
                 revert Payment__FailedPayment();
             }
