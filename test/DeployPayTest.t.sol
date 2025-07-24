@@ -16,16 +16,17 @@ contract DeployPayTest is Test {
     address user3 = makeAddr("user3");
     address owner = makeAddr("owner");
     address anvil = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
-    address sepolia = vm.addr(vm.envUint("PRIVATE_KEY"));
+    // address sepolia = vm.addr(vm.envUint("PRIVATE_KEY"));
     address deployerAddress;
 
     function setUp() public {
-        if (bytes(vm.envString("SEPOLIA_RPC_URL")).length > 0) {
-            vm.createSelectFork(vm.envString("SEPOLIA_RPC_URL"));
-            deployerAddress = sepolia;
-        } else {
-            deployerAddress = anvil;
-        }
+        // if (bytes(vm.envString("SEPOLIA_RPC_URL")).length > 0) {
+        //     vm.createSelectFork(vm.envString("SEPOLIA_RPC_URL"));
+        //     deployerAddress = sepolia;
+        // } else {
+        //     deployerAddress = anvil;
+        // }
+        deployerAddress = anvil;
         deployer = new DeployPay();
         (payToken, paymentContract) = deployer.run();
     }
@@ -83,5 +84,43 @@ contract DeployPayTest is Test {
         mockPayment.addUserToPaymentList(user1, 1 ether);
         vm.expectRevert(Payment.Payment__FailedPayment.selector);
         mockPayment.payUsers();
+    }
+
+    function testChainlinkUpkeepCallsPayEveryday() public {
+        address upkeep = makeAddr("upkeep");
+
+        vm.startPrank(deployerAddress);
+        payToken.grantMintAndBurnRole(address(paymentContract));
+        paymentContract.addUserToPaymentList(user1, 1 ether);
+        paymentContract.addUserToPaymentList(user2, 2 ether);
+
+        uint256 user1StartingBalance = payToken.balanceOf(user1);
+        uint256 user2StartingBalance = payToken.balanceOf(user2);
+
+        assertEq(user1StartingBalance, 0);
+        assertEq(user2StartingBalance, 0);
+        vm.stopPrank();
+        vm.startPrank(upkeep);
+        paymentContract.payUsers();
+        uint256 user1BalanceAfter1Day = payToken.balanceOf(user1);
+        uint256 user2BalanceAfter1Day = payToken.balanceOf(user2);
+        assertEq(user1BalanceAfter1Day, 1 ether);
+        assertEq(user2BalanceAfter1Day, 2 ether);
+        vm.warp(block.timestamp + 1 days);
+
+        paymentContract.payUsers();
+        uint256 user1BalanceAfter2Day = payToken.balanceOf(user1);
+        uint256 user2BalanceAfter2Day = payToken.balanceOf(user2);
+        assertEq(user1BalanceAfter2Day, 2 ether);
+        assertEq(user2BalanceAfter2Day, 4 ether);
+        vm.warp(block.timestamp + 1 days);
+
+        paymentContract.payUsers();
+        uint256 user1BalanceAfter3Day = payToken.balanceOf(user1);
+        uint256 user2BalanceAfter3Day = payToken.balanceOf(user2);
+        assertEq(user1BalanceAfter3Day, 3 ether);
+        assertEq(user2BalanceAfter3Day, 6 ether);
+        vm.warp(block.timestamp + 1 days);
+        vm.stopPrank();
     }
 }
