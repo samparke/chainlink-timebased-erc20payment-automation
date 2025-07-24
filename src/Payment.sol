@@ -3,8 +3,10 @@ pragma solidity ^0.8.24;
 
 import {PayToken} from "./PayToken.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract Payment is Ownable {
+contract Payment is Ownable, ReentrancyGuard, AccessControl {
     // errors
     error Payment__UserAlreadyBeingPaid(address user);
     error Payment__FailedPayment();
@@ -17,9 +19,15 @@ contract Payment is Ownable {
     mapping(address user => uint256 balance) private s_userTokenBalance;
     mapping(address user => uint256 amount) private s_amountToPayUsers;
     address[] private usersToPay;
+    bytes32 public constant PAY_USER_ROLE = keccak256("PAY_USER_ROLE");
 
     constructor(address _payToken) Ownable(msg.sender) {
         i_payToken = PayToken(_payToken);
+        grantPaymentRole(msg.sender);
+    }
+
+    function grantPaymentRole(address _account) public onlyOwner {
+        _grantRole(PAY_USER_ROLE, _account);
     }
 
     function addUserToPaymentList(address _user, uint256 _amountToPay) external onlyOwner {
@@ -33,7 +41,7 @@ contract Payment is Ownable {
         emit UserAddedToPaymentList(_user);
     }
 
-    function payUsers() external {
+    function payUsers() external nonReentrant onlyRole(PAY_USER_ROLE) {
         for (uint256 i = 0; i < usersToPay.length; i++) {
             bool success = i_payToken.mint(usersToPay[i], s_amountToPayUsers[usersToPay[i]]);
             if (!success) {

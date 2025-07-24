@@ -91,6 +91,7 @@ contract DeployPayTest is Test {
 
         vm.startPrank(deployerAddress);
         payToken.grantMintAndBurnRole(address(paymentContract));
+        paymentContract.grantPaymentRole(upkeep);
         paymentContract.addUserToPaymentList(user1, 1 ether);
         paymentContract.addUserToPaymentList(user2, 2 ether);
 
